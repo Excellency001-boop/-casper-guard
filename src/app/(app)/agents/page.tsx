@@ -181,6 +181,153 @@ function AgentCard({ agent }: { agent: (typeof agents)[0] }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function AgentRunPanel() {
+  const [running, setRunning] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [lastRun, setLastRun] = useState<any>(null);
+  const [protocol, setProtocol] = useState('NexusDEX');
+
+  const runCycle = async () => {
+    setRunning(true);
+    try {
+      const res = await fetch(`/api/agent?run=true&protocol=${encodeURIComponent(protocol)}`);
+      const data = await res.json();
+      setLastRun(data.latestRun);
+    } catch (e) {
+      console.error(e);
+    }
+    setRunning(false);
+  };
+
+  return (
+    <div className="gradient-border p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+            <Bot className="w-4 h-4 text-accent-purple" />
+            Autonomous Agent Cycle
+          </h2>
+          <p className="text-[10px] text-text-secondary mt-0.5">READ blockchain → ANALYZE risk → DECIDE action → SIGN deploy → LOG receipt</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={protocol}
+            onChange={(e) => setProtocol(e.target.value)}
+            className="text-xs bg-bg-primary border border-border-main rounded-lg px-2 py-1.5 text-text-primary"
+          >
+            <option>CasperSwap</option>
+            <option>NexusDEX</option>
+            <option>CSPR.trade</option>
+            <option>FriendlyMarket</option>
+            <option>CasperLend</option>
+            <option>CasperBridge</option>
+          </select>
+          <button
+            onClick={runCycle}
+            disabled={running}
+            className="flex items-center gap-1.5 bg-accent-purple hover:bg-accent-purple/80 disabled:bg-accent-purple/40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {running ? (
+              <>
+                <Activity className="w-3 h-3 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <Zap className="w-3 h-3" />
+                Run Agent Cycle
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {lastRun && (
+        <div className="space-y-3">
+          {/* Status bar */}
+          <div className="flex items-center gap-3 text-xs">
+            <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full font-medium ${
+              lastRun.status === 'completed' ? 'bg-accent-green/10 text-accent-green' : 'bg-accent-red/10 text-accent-red'
+            }`}>
+              {lastRun.status === 'completed' ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+              {lastRun.status}
+            </span>
+            <span className="text-text-secondary">{lastRun.duration}ms</span>
+            <span className="text-text-secondary">Run: {lastRun.runId}</span>
+          </div>
+
+          {/* 5-step pipeline */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+            {/* Step 1: READ */}
+            <div className="bg-bg-primary rounded-lg p-3 border border-accent-blue/20">
+              <p className="text-[10px] font-bold text-accent-blue mb-1">1. READ</p>
+              <p className="text-[10px] text-text-secondary">Block #{lastRun.observation?.blockHeight?.toLocaleString()}</p>
+              <p className="text-[10px] text-text-secondary">Era {lastRun.observation?.era?.toLocaleString()}</p>
+              <p className="text-[10px] text-text-secondary">CSPR ${lastRun.observation?.csprPrice?.toFixed(5) ?? '—'}</p>
+              <p className="text-[10px] text-text-secondary">{lastRun.observation?.tokenCount} tokens</p>
+              {lastRun.observation?.mcpConnected && (
+                <span className="text-[8px] bg-accent-green/10 text-accent-green px-1.5 py-0.5 rounded mt-1 inline-block">MCP Live</span>
+              )}
+            </div>
+
+            {/* Step 2: ANALYZE */}
+            <div className="bg-bg-primary rounded-lg p-3 border border-accent-cyan/20">
+              <p className="text-[10px] font-bold text-accent-cyan mb-1">2. ANALYZE</p>
+              <p className="text-[10px] text-text-primary font-medium">{lastRun.analysis?.protocol}</p>
+              <p className={`text-lg font-bold ${
+                lastRun.analysis?.riskScore > 70 ? 'text-accent-red' :
+                lastRun.analysis?.riskScore > 40 ? 'text-accent-orange' : 'text-accent-green'
+              }`}>{lastRun.analysis?.riskScore}/100</p>
+              <p className="text-[8px] text-text-secondary">{lastRun.analysis?.riskCategory}</p>
+            </div>
+
+            {/* Step 3: DECIDE */}
+            <div className="bg-bg-primary rounded-lg p-3 border border-accent-orange/20">
+              <p className="text-[10px] font-bold text-accent-orange mb-1">3. DECIDE</p>
+              <p className="text-[10px] text-text-primary font-medium">{lastRun.decision?.action?.replace(/_/g, ' ')}</p>
+              <span className={`text-[8px] px-1.5 py-0.5 rounded mt-1 inline-block ${
+                lastRun.decision?.urgency === 'critical' ? 'bg-accent-red/10 text-accent-red' :
+                lastRun.decision?.urgency === 'high' ? 'bg-accent-orange/10 text-accent-orange' :
+                'bg-accent-green/10 text-accent-green'
+              }`}>{lastRun.decision?.urgency} urgency</span>
+            </div>
+
+            {/* Step 4: ACT */}
+            <div className="bg-bg-primary rounded-lg p-3 border border-accent-purple/20">
+              <p className="text-[10px] font-bold text-accent-purple mb-1">4. ACT</p>
+              <p className="text-[10px] text-text-secondary">Signed: {lastRun.action?.signed ? 'Yes' : 'No'}</p>
+              <p className="text-[8px] text-text-secondary font-mono break-all mt-1">
+                {lastRun.action?.deployHash?.slice(0, 16)}...
+              </p>
+              {lastRun.action?.signed && (
+                <a href={lastRun.action.explorerUrl} target="_blank" rel="noopener noreferrer"
+                  className="text-[8px] text-accent-purple hover:underline mt-1 inline-block">
+                  View on Explorer
+                </a>
+              )}
+            </div>
+
+            {/* Step 5: LOG */}
+            <div className="bg-bg-primary rounded-lg p-3 border border-accent-green/20">
+              <p className="text-[10px] font-bold text-accent-green mb-1">5. LOG</p>
+              <p className="text-[10px] text-text-secondary">Agent: {lastRun.agent}</p>
+              <p className="text-[10px] text-text-secondary">{new Date(lastRun.timestamp).toLocaleTimeString()}</p>
+              <span className="text-[8px] bg-accent-green/10 text-accent-green px-1.5 py-0.5 rounded mt-1 inline-block">Receipt Saved</span>
+            </div>
+          </div>
+
+          {/* Reasoning */}
+          <div className="bg-bg-primary rounded-lg p-3 border border-border-main">
+            <p className="text-[10px] font-bold text-text-secondary mb-1">Agent Reasoning</p>
+            <p className="text-[10px] text-text-primary leading-relaxed">{lastRun.decision?.justification}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AgentsPage() {
   const [liveCount, setLiveCount] = useState(0);
   const { data: agentData } = useAgentData(15000);
@@ -275,6 +422,9 @@ export default function AgentsPage() {
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-accent-purple/50 to-transparent" />
         </div>
       </div>
+
+      {/* Autonomous Agent Cycle — Run Live */}
+      <AgentRunPanel />
 
       {/* Agent Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">

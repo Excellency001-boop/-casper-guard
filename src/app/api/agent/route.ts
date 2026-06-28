@@ -1,142 +1,123 @@
+/**
+ * Autonomous Agent API
+ *
+ * GET  /api/agent           → View agent fleet status + recent run history
+ * POST /api/agent           → Execute a full autonomous agent cycle
+ * GET  /api/agent?run=true  → Trigger + view a cycle in one call (for demos)
+ *
+ * Each agent cycle: READ blockchain → ANALYZE risk → DECIDE action → SIGN deploy → LOG receipt
+ */
 import { NextResponse } from 'next/server';
-import { getNetworkStats } from '@/lib/casper-client';
+import { executeAgentCycle, getAgentRunHistory } from '@/lib/agent-loop';
+import { getNetworkStatus, getDeFiMarketData } from '@/lib/mcp-client';
+import { getAgentWallet } from '@/lib/casper-wallet';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  try {
-    const stats = await getNetworkStats();
-    const now = new Date().toISOString();
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const triggerRun = url.searchParams.get('run') === 'true';
+  const protocol = url.searchParams.get('protocol') || 'CasperSwap';
 
-    const agentFleet = {
-      timestamp: now,
-      dataSource: 'Casper Testnet (api.testnet.cspr.live)',
-      networkConnected: stats.blockHeight > 0,
-      blockHeight: stats.blockHeight,
-      era: stats.era,
+  try {
+    // If ?run=true, execute an agent cycle first
+    let latestRun = null;
+    if (triggerRun) {
+      latestRun = await executeAgentCycle(protocol);
+    }
+
+    // Get live state for the fleet overview
+    const [networkStatus, wallet] = await Promise.all([
+      getNetworkStatus(),
+      getAgentWallet(),
+    ]);
+
+    const history = getAgentRunHistory();
+
+    return NextResponse.json({
+      fleet: {
+        name: 'CasperGuard Agent Fleet',
+        type: 'autonomous-defi-insurance',
+        protocol: 'Model Context Protocol (MCP)',
+        network: 'casper-test',
+        mcpConnected: networkStatus.source === 'mcp',
+        mcpServer: networkStatus.mcpServer ?? null,
+        blockHeight: networkStatus.blockHeight,
+        era: networkStatus.era,
+        agentWallet: wallet.publicKey.toHex(),
+      },
       agents: [
         {
           name: 'RiskSentinel',
-          type: 'risk-monitor',
+          role: 'Autonomous risk monitor — reads blockchain state, analyzes protocol risk, signs on-chain actions',
           status: 'active',
-          lastAction: now,
-          currentTask: `Scanning block #${stats.blockHeight} for anomalies`,
-          mcpConnections: ['Casper MCP Server', 'CSPR.trade MCP'],
-          stats: {
-            scansCompleted: Math.floor(stats.blockHeight * 0.8),
-            alertsRaised: 3,
-            protocolsMonitored: 6,
-          },
-          recentActions: [
-            {
-              action: `Scanned block #${stats.blockHeight}`,
-              status: 'success',
-              timestamp: now,
-              details: `Block produced at ${stats.timestamp}, era ${stats.era}`,
-            },
-            {
-              action: 'Protocol risk score updated',
-              status: 'success',
-              timestamp: new Date(Date.now() - 120000).toISOString(),
-              details: 'NexusDEX risk elevated to 82/100 — pending contract upgrade',
-            },
-            {
-              action: 'Whale movement detected',
-              status: 'warning',
-              timestamp: new Date(Date.now() - 300000).toISOString(),
-              details: `Large transfer detected near block #${stats.blockHeight - 5}`,
-            },
+          capabilities: [
+            'READ: Live blockchain data via CSPR.trade MCP (24 tools)',
+            'ANALYZE: Protocol risk scoring with 4 weighted factors',
+            'DECIDE: Threshold-based action selection (routine/adjust/emergency)',
+            'ACT: Sign real Casper deploys with cryptographic proof',
+            'LOG: Full reasoning chain with verifiable receipts',
           ],
+          totalRuns: history.length,
+          lastRun: history[0]?.timestamp ?? null,
         },
         {
-          name: 'ClaimBot',
-          type: 'claim-processor',
+          name: 'ClaimProcessor',
+          role: 'Processes insurance claims with evidence verification and risk correlation',
           status: 'active',
-          lastAction: new Date(Date.now() - 180000).toISOString(),
-          currentTask: 'Monitoring for new claim submissions',
-          mcpConnections: ['Casper MCP Server', 'CSPR.cloud APIs'],
-          stats: {
-            claimsProcessed: 23,
-            avgProcessTime: '2.5 min',
-            accuracy: '96%',
-          },
-          recentActions: [
-            {
-              action: 'Claim CLM-003 assessment complete',
-              status: 'success',
-              timestamp: new Date(Date.now() - 180000).toISOString(),
-              details: 'AI confidence: 72% — recommended: investigate further',
-            },
-            {
-              action: 'Evidence verified on-chain',
-              status: 'success',
-              timestamp: new Date(Date.now() - 600000).toISOString(),
-              details: `TX hash confirmed on block #${stats.blockHeight - 12}`,
-            },
-          ],
+          capabilities: ['Claim intake', 'Evidence hash verification', 'Risk correlation', 'Payout recommendation'],
         },
         {
-          name: 'UnderwriteAI',
-          type: 'underwriter',
+          name: 'PolicyOptimizer',
+          role: 'Optimizes insurance premiums based on real-time DeFi market data',
           status: 'active',
-          lastAction: new Date(Date.now() - 300000).toISOString(),
-          currentTask: 'Recalculating premium rates from latest risk data',
-          mcpConnections: ['Casper MCP Server', 'External Oracles via x402'],
-          stats: {
-            policiesUnderwritten: 147,
-            premiumsCollected: '185K CSPR',
-            rateAdjustments: 12,
-          },
-          recentActions: [
-            {
-              action: 'Premium rate adjustment',
-              status: 'success',
-              timestamp: new Date(Date.now() - 300000).toISOString(),
-              details: 'NexusDEX premium increased 8.5% → 9.2% due to elevated risk',
-            },
-            {
-              action: 'x402 oracle data fetched',
-              status: 'success',
-              timestamp: new Date(Date.now() - 360000).toISOString(),
-              details: 'Paid 0.5 CSPR for external price feed via x402 micropayment',
-            },
-          ],
+          capabilities: ['Premium calculation', 'Market data analysis via MCP', 'Rate adjustment'],
         },
         {
-          name: 'VaultKeeper',
-          type: 'vault-manager',
+          name: 'ComplianceGuard',
+          role: 'Monitors regulatory compliance and policy adherence',
           status: 'active',
-          lastAction: new Date(Date.now() - 420000).toISOString(),
-          currentTask: 'Monitoring reserve ratio — currently at 89%',
-          mcpConnections: ['Casper MCP Server', 'Odra Smart Contracts'],
-          stats: {
-            rebalances: 8,
-            reserveRatio: '89%',
-            yieldGenerated: '12.3K CSPR',
-          },
-          recentActions: [
-            {
-              action: 'Reserve rebalance executed',
-              status: 'success',
-              timestamp: new Date(Date.now() - 420000).toISOString(),
-              details: 'Moved 15K CSPR from yield pool to claims reserve via Odra contract',
-              txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-            },
-            {
-              action: 'Yield harvest',
-              status: 'success',
-              timestamp: new Date(Date.now() - 900000).toISOString(),
-              details: 'Collected 1.2K CSPR yield from staking delegation',
-            },
-          ],
+          capabilities: ['Policy validation', 'Reserve ratio monitoring', 'Audit trail'],
         },
       ],
-    };
-
-    return NextResponse.json(agentFleet);
+      // Latest triggered run (if ?run=true)
+      ...(latestRun ? { latestRun } : {}),
+      // Run history
+      runHistory: history.slice(0, 10),
+      // How to use
+      usage: {
+        viewFleet: 'GET /api/agent',
+        triggerCycle: 'GET /api/agent?run=true',
+        triggerWithProtocol: 'GET /api/agent?run=true&protocol=NexusDEX',
+        postCycle: 'POST /api/agent { "protocol": "CasperSwap" }',
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Agent fleet error', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const protocol = (body as { protocol?: string }).protocol || 'CasperSwap';
+
+    // Execute a full autonomous agent cycle
+    const run = await executeAgentCycle(protocol);
+
+    return NextResponse.json({
+      message: 'Autonomous agent cycle completed',
+      run,
+      // Include history
+      totalRuns: getAgentRunHistory().length,
+      recentRuns: getAgentRunHistory().slice(0, 5),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Agent cycle error', details: String(error) },
       { status: 500 }
     );
   }
