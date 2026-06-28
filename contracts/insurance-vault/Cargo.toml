@@ -1,0 +1,12 @@
+[package]
+name = "casperguard-insurance-vault"
+version = "0.1.0"
+edition = "2021"
+authors = ["CasperGuard Team"]
+description = "On-chain insurance vault smart contract built with Odra framework for Casper Network"
+
+[dependencies]
+odra = "1.4.0"
+
+[features]
+default = []

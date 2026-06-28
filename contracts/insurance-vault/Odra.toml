@@ -1,0 +1,7 @@
+[project]
+name = "casperguard-insurance-vault"
+modules = ["InsuranceVault"]
+
+[network.testnet]
+node_url = "https://node.testnet.casper.network/rpc"
+chain_name = "casper-test"

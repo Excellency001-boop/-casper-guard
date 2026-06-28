@@ -135,9 +135,13 @@ function CreatePolicyModal({ onClose }: { onClose: () => void }) {
   };
 
   if (result) {
-    const policy = (result as Record<string, unknown>).policy as Record<string, unknown> | undefined;
-    const tx = (result as Record<string, unknown>).transaction as Record<string, unknown> | undefined;
-    const uw = (result as Record<string, unknown>).underwriting as Record<string, unknown> | undefined;
+    const r = result as Record<string, unknown>;
+    const policy = r.policy as Record<string, unknown> | undefined;
+    const tx = r.transaction as Record<string, unknown> | undefined;
+    const uw = r.underwriting as Record<string, unknown> | undefined;
+    const x402 = r.x402Payment as Record<string, unknown> | undefined;
+    const odra = r.odraContract as Record<string, unknown> | undefined;
+    const riskAssessment = uw?.riskAssessment as Record<string, unknown> | undefined;
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]" onClick={onClose}>
         <div className="bg-bg-card border border-border-main rounded-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -152,7 +156,18 @@ function CreatePolicyModal({ onClose }: { onClose: () => void }) {
           <div className="w-14 h-14 rounded-full bg-accent-green/20 flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-7 h-7 text-accent-green" />
           </div>
-          <p className="text-center text-sm font-bold text-text-primary mb-4">Policy Created Successfully</p>
+          <p className="text-center text-sm font-bold text-text-primary mb-2">Policy Created Successfully</p>
+
+          {/* Integration badges */}
+          <div className="flex flex-wrap justify-center gap-1.5 mb-4">
+            {riskAssessment?.aiPowered ? (
+              <span className="text-[10px] bg-accent-cyan/15 text-accent-cyan px-2 py-0.5 rounded-full font-semibold">AI-Powered</span>
+            ) : null}
+            <span className="text-[10px] bg-accent-orange/15 text-accent-orange px-2 py-0.5 rounded-full font-semibold">x402 Payment</span>
+            <span className="text-[10px] bg-accent-purple/15 text-accent-purple px-2 py-0.5 rounded-full font-semibold">On-chain Signed</span>
+            {odra && <span className="text-[10px] bg-accent-green/15 text-accent-green px-2 py-0.5 rounded-full font-semibold">Odra Contract</span>}
+            <span className="text-[10px] bg-accent-blue/15 text-accent-blue px-2 py-0.5 rounded-full font-semibold">MCP: {String(r.dataSource || 'Casper Testnet')}</span>
+          </div>
 
           {policy && (
             <div className="bg-bg-primary rounded-lg p-3 mb-3 space-y-2">
@@ -175,18 +190,55 @@ function CreatePolicyModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {uw && (
-            <div className="bg-bg-primary rounded-lg p-3 mb-3">
-              <p className="text-xs text-text-secondary mb-1">Payment Method</p>
-              <p className="text-sm font-medium text-accent-purple">{String((uw as Record<string, unknown>).paymentMethod)}</p>
+          {/* AI Risk Assessment */}
+          {riskAssessment && (
+            <div className="bg-accent-cyan/5 border border-accent-cyan/20 rounded-lg p-3 mb-3">
+              <p className="text-xs font-semibold text-accent-cyan mb-1 flex items-center gap-1">
+                {riskAssessment.aiPowered ? '🧠 Claude AI Assessment' : '📊 Algorithmic Assessment'}
+                <span className="text-[10px] text-text-secondary font-normal ml-auto">{String(riskAssessment.model)}</span>
+              </p>
+              <p className="text-[11px] text-text-secondary leading-relaxed">{String(riskAssessment.reasoning)}</p>
             </div>
           )}
 
+          {/* x402 Payment */}
+          {x402 && (
+            <div className="bg-accent-orange/5 border border-accent-orange/20 rounded-lg p-3 mb-3">
+              <p className="text-xs font-semibold text-accent-orange mb-1">x402 Micropayment</p>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-text-secondary">Amount</span>
+                <span className="text-accent-orange font-mono">{String(x402.amount)}</span>
+              </div>
+              <p className="text-[10px] text-text-secondary/70 font-mono mt-1 break-all">Deploy: {String(x402.deployHash).slice(0, 32)}...</p>
+            </div>
+          )}
+
+          {/* On-chain Transaction */}
           {tx && (
-            <div className="bg-accent-purple/10 border border-accent-purple/20 rounded-lg p-3">
+            <div className="bg-accent-purple/5 border border-accent-purple/20 rounded-lg p-3 mb-3">
               <p className="text-xs text-accent-purple font-semibold mb-1">On-chain Transaction</p>
-              <p className="text-[10px] text-accent-purple/80 font-mono break-all">TX: {String((tx as Record<string, unknown>).txHash)}</p>
-              <p className="text-[10px] text-text-secondary mt-1">Block #{String(result.blockHeight)} · Gas: {String((tx as Record<string, unknown>).gasCost)}</p>
+              <p className="text-[10px] text-accent-purple/80 font-mono break-all">Deploy: {String(tx.deployHash)}</p>
+              <p className="text-[10px] text-text-secondary mt-1">
+                Block #{String(r.blockHeight)} · Chain: {String(tx.chainName)} · {tx.submitted ? '✅ Submitted' : '📝 Signed'}
+              </p>
+            </div>
+          )}
+
+          {/* Odra Contract */}
+          {odra && (
+            <div className="bg-accent-green/5 border border-accent-green/20 rounded-lg p-3">
+              <p className="text-xs text-accent-green font-semibold mb-1">Odra Smart Contract</p>
+              <div className="space-y-1 text-[10px]">
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Framework</span>
+                  <span className="text-text-primary font-mono">{String(odra.framework)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Entry Point</span>
+                  <span className="text-accent-green font-mono">{String(odra.entryPoint)}</span>
+                </div>
+                <p className="text-text-secondary/70 font-mono break-all mt-1">Contract: {String(odra.contractHash).slice(0, 32)}...</p>
+              </div>
             </div>
           )}
         </div>

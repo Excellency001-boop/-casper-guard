@@ -1,87 +1,96 @@
 import { NextResponse } from 'next/server';
-import { getNetworkStats } from '@/lib/casper-client';
+import { getNetworkStatus } from '@/lib/mcp-client';
+import { analyzeProtocolRisk } from '@/lib/ai-reasoning';
+import { createAgentPayment } from '@/lib/x402-server';
+import { getAgentWallet } from '@/lib/casper-wallet';
 
 export const dynamic = 'force-dynamic';
 
+const PROTOCOLS = [
+  { name: 'CasperSwap', tvl: 12_500_000, alerts: [] as string[] },
+  { name: 'CSPR.trade', tvl: 8_200_000, alerts: ['Liquidity pool imbalance detected by RiskSentinel'] },
+  { name: 'FriendlyMarket', tvl: 3_100_000, alerts: ['Governance proposal may affect smart contract parameters'] },
+  { name: 'NexusDEX', tvl: 1_800_000, alerts: ['Smart contract upgrade pending — increased risk window'] },
+  { name: 'CasperLend', tvl: 22_000_000, alerts: [] as string[] },
+  { name: 'CasperBridge', tvl: 5_600_000, alerts: ['Cross-chain bridge latency elevated'] },
+];
+
 export async function GET() {
   try {
-    const stats = await getNetworkStats();
+    const status = await getNetworkStatus();
+    const wallet = await getAgentWallet();
 
-    const deployCount = stats.recentDeploys.length;
-    const transferCount = stats.recentTransfers.length;
+    // Analyze first protocol with AI to demonstrate real AI reasoning
+    // (analyzing all 6 with Claude would be slow, so we do 1 with AI + 5 algorithmic)
+    const aiProtocol = PROTOCOLS[3]; // NexusDEX — highest risk, most interesting
+    const aiAnalysis = await analyzeProtocolRisk(aiProtocol.name, {
+      blockHeight: status.blockHeight,
+      era: status.era,
+      deployCount: 10,
+      tvl: aiProtocol.tvl,
+      recentAlerts: aiProtocol.alerts,
+    });
 
-    const riskAssessment = {
+    // Create x402 payment for data access (agent paying for oracle data)
+    const x402Payment = await createAgentPayment(
+      wallet.publicKey.toHex(),
+      '100000000', // 0.1 CSPR for data access
+      'RiskSentinel oracle data query'
+    );
+
+    const protocols = PROTOCOLS.map((p) => {
+      if (p.name === aiProtocol.name) {
+        return {
+          name: p.name,
+          riskScore: aiAnalysis.overallScore,
+          category: aiAnalysis.category,
+          tvl: p.tvl,
+          alerts: p.alerts.length > 0
+            ? [...p.alerts, ...(status.blockHeight > 0 ? [`AI analysis at block #${status.blockHeight}: ${aiAnalysis.recommendation}`] : [])]
+            : [],
+          aiPowered: aiAnalysis.aiPowered,
+          aiReasoning: aiAnalysis.reasoning,
+        };
+      }
+
+      // Algorithmic for the rest
+      const baseScores: Record<string, number> = {
+        CasperSwap: 22, 'CSPR.trade': 45, FriendlyMarket: 68, CasperLend: 15, CasperBridge: 55,
+      };
+      const score = (baseScores[p.name] ?? 50) + Math.round(Math.random() * 8);
+      return {
+        name: p.name,
+        riskScore: score,
+        category: score < 30 ? 'low' : score < 60 ? 'medium' : score < 80 ? 'high' : 'critical',
+        tvl: p.tvl,
+        alerts: p.alerts,
+        aiPowered: false,
+      };
+    });
+
+    return NextResponse.json({
       agent: 'RiskSentinel',
       timestamp: new Date().toISOString(),
-      dataSource: 'Casper Testnet (api.testnet.cspr.live)',
+      dataSource: status.source === 'mcp' ? 'Casper MCP Server' : 'Casper Testnet REST API',
+      mcpConnected: status.source === 'mcp',
       network: {
-        name: 'casper-test',
-        blockHeight: stats.blockHeight,
-        era: stats.era,
-        lastBlockTime: stats.timestamp,
-        health: stats.blockHeight > 0 ? 'healthy' : 'unreachable',
+        blockHeight: status.blockHeight,
+        era: status.era,
+        health: status.blockHeight > 0 ? 'healthy' : 'unreachable',
       },
       analysis: {
-        deployActivity: {
-          recentCount: deployCount,
-          transferCount,
-          risk: deployCount > 15 ? 'elevated' : 'normal',
-        },
-        overallRiskScore: Math.min(
-          100,
-          Math.round(15 + (deployCount > 15 ? 20 : 0) + Math.random() * 15)
-        ),
+        overallRiskScore: Math.round(protocols.reduce((s, p) => s + p.riskScore, 0) / protocols.length),
+        aiPowered: aiAnalysis.aiPowered,
       },
-      protocols: [
-        {
-          name: 'CasperSwap',
-          riskScore: 22 + Math.round(Math.random() * 8),
-          category: 'low',
-          tvl: 12_500_000,
-          alerts: [],
-        },
-        {
-          name: 'CSPR.trade',
-          riskScore: 45 + Math.round(Math.random() * 10),
-          category: 'medium',
-          tvl: 8_200_000,
-          alerts: ['Liquidity pool imbalance detected by RiskSentinel'],
-        },
-        {
-          name: 'FriendlyMarket',
-          riskScore: 68 + Math.round(Math.random() * 10),
-          category: 'high',
-          tvl: 3_100_000,
-          alerts: [
-            'Governance proposal may affect smart contract parameters',
-            `Whale movement: large transfer detected in block #${stats.blockHeight - 3}`,
-          ],
-        },
-        {
-          name: 'NexusDEX',
-          riskScore: 78 + Math.round(Math.random() * 8),
-          category: 'critical',
-          tvl: 1_800_000,
-          alerts: ['Smart contract upgrade pending — increased risk window'],
-        },
-        {
-          name: 'CasperLend',
-          riskScore: 15 + Math.round(Math.random() * 8),
-          category: 'low',
-          tvl: 22_000_000,
-          alerts: [],
-        },
-        {
-          name: 'CasperBridge',
-          riskScore: 55 + Math.round(Math.random() * 10),
-          category: 'medium',
-          tvl: 5_600_000,
-          alerts: ['Cross-chain bridge latency elevated'],
-        },
-      ],
-    };
-
-    return NextResponse.json(riskAssessment);
+      x402Payment: {
+        id: x402Payment.id,
+        amount: x402Payment.amount,
+        deployHash: x402Payment.deployHash,
+        status: x402Payment.status,
+      },
+      agentWallet: wallet.publicKey.toHex(),
+      protocols,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'RiskSentinel agent error', details: String(error) },
