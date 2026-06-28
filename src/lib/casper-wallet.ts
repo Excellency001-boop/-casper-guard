@@ -17,12 +17,23 @@ import {
 const RPC_URL = 'https://node.testnet.casper.network/rpc';
 const CHAIN_NAME = 'casper-test';
 
-// Agent wallet singleton — generated once per server lifecycle
+// Agent wallet singleton — persists via env var across deploys
 let agentWallet: PrivateKey | null = null;
 
 export async function getAgentWallet(): Promise<PrivateKey> {
   if (!agentWallet) {
-    agentWallet = await PrivateKey.generate(KeyAlgorithm.ED25519);
+    const storedKey = process.env.CASPER_AGENT_PRIVATE_KEY;
+    if (storedKey) {
+      // Restore wallet from stored private key hex
+      try {
+        agentWallet = PrivateKey.fromHex(storedKey, KeyAlgorithm.ED25519);
+      } catch (err) {
+        console.warn('[Wallet] Failed to restore from env, generating new:', err);
+        agentWallet = await PrivateKey.generate(KeyAlgorithm.ED25519);
+      }
+    } else {
+      agentWallet = await PrivateKey.generate(KeyAlgorithm.ED25519);
+    }
   }
   return agentWallet;
 }
