@@ -13,8 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CasperGuard — AI-Powered DeFi Insurance",
-  description: "Autonomous AI agents protecting your DeFi positions on Casper Network",
+  title: "CasperGuard — AI-Powered DeFi Insurance on Casper Network",
+  description: "4 autonomous AI agents protect your DeFi positions using Casper AI Toolkit — MCP Servers, x402 Micropayments, CSPR.click Agent Skill, and Odra Smart Contracts. Live on Casper Testnet.",
+  icons: { icon: "/icon.svg" },
+  openGraph: {
+    title: "CasperGuard — AI-Powered DeFi Insurance",
+    description: "Autonomous AI agents protecting DeFi on Casper Network with real-time risk monitoring, instant claims, and x402 micropayments.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

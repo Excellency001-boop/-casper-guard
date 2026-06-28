@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="180" y1="100" x2="332" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#e0e7ff" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="inner" x1="220" y1="180" x2="300" y2="350" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="248" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="240" fill="none" stroke="white" stroke-opacity="0.15" stroke-width="2"/>
+  <!-- Shield shape -->
+  <path d="M256 100 L360 160 L360 290 C360 350 316 400 256 420 C196 400 152 350 152 290 L152 160 Z" fill="url(#shield)" filter="url(#glow)"/>
+  <!-- Inner shield accent -->
+  <path d="M256 140 L330 185 L330 280 C330 325 300 365 256 380 C212 365 182 325 182 280 L182 185 Z" fill="url(#inner)" opacity="0.2"/>
+  <!-- AI circuit lines -->
+  <g stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.9">
+    <!-- Central node -->
+    <circle cx="256" cy="250" r="20" fill="white" fill-opacity="0.95" stroke="none"/>
+    <circle cx="256" cy="250" r="8" fill="url(#inner)" stroke="none"/>
+    <!-- Top branch -->
+    <line x1="256" y1="230" x2="256" y2="180"/>
+    <circle cx="256" cy="175" r="6" fill="white"/>
+    <!-- Left branches -->
+    <line x1="238" y1="258" x2="200" y2="290"/>
+    <circle cx="196" cy="294" r="6" fill="white"/>
+    <line x1="196" y1="300" x2="196" y2="330"/>
+    <circle cx="196" cy="335" r="5" fill="white"/>
+    <!-- Right branches -->
+    <line x1="274" y1="258" x2="312" y2="290"/>
+    <circle cx="316" cy="294" r="6" fill="white"/>
+    <line x1="316" y1="300" x2="316" y2="330"/>
+    <circle cx="316" cy="335" r="5" fill="white"/>
+    <!-- Horizontal connector -->
+    <line x1="220" y1="250" x2="236" y2="250"/>
+    <line x1="276" y1="250" x2="292" y2="250"/>
+    <circle cx="216" cy="250" r="5" fill="white"/>
+    <circle cx="296" cy="250" r="5" fill="white"/>
+  </g>
+  <!-- Checkmark in center -->
+  <path d="M244 250 L253 259 L270 240" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
