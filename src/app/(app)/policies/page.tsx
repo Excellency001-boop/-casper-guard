@@ -10,9 +10,11 @@ import {
   CheckCircle,
   Clock,
   X,
+  Bot,
 } from 'lucide-react';
 import { policies, protocols } from '@/lib/mock-data';
 import type { Policy } from '@/types';
+import LiveNetworkBar from '@/components/LiveNetworkBar';
 
 function PolicyCard({ policy }: { policy: Policy }) {
   const statusConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
@@ -97,7 +99,8 @@ function CreatePolicyModal({ onClose }: { onClose: () => void }) {
     protocol: '',
     coverage: '',
   });
-  const [submitted, setSubmitted] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
 
   const selectedProtocol = protocols.find((p) => p.protocol === formData.protocol);
   const premiumRate = selectedProtocol
@@ -111,30 +114,81 @@ function CreatePolicyModal({ onClose }: { onClose: () => void }) {
     : 0;
   const premiumAmount = formData.coverage ? parseFloat(formData.coverage) * premiumRate : 0;
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => {
-      onClose();
-    }, 2000);
+  const handleSubmit = async () => {
+    setProcessing(true);
+    try {
+      const res = await fetch('/api/policies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          holder: formData.holder,
+          protocol: formData.protocol,
+          coverage: formData.coverage,
+        }),
+      });
+      if (res.ok) setResult(await res.json());
+    } catch {
+      // fallback
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  if (submitted) {
+  if (result) {
+    const policy = (result as Record<string, unknown>).policy as Record<string, unknown> | undefined;
+    const tx = (result as Record<string, unknown>).transaction as Record<string, unknown> | undefined;
+    const uw = (result as Record<string, unknown>).underwriting as Record<string, unknown> | undefined;
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]" onClick={onClose}>
-        <div className="bg-bg-card border border-border-main rounded-2xl p-8 max-w-md w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
-          <div className="w-16 h-16 rounded-full bg-accent-green/20 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-accent-green" />
+        <div className="bg-bg-card border border-border-main rounded-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+              <Bot className="w-5 h-5 text-accent-cyan" />
+              UnderwriteAI Result
+            </h3>
+            <button onClick={onClose} className="text-text-secondary hover:text-text-primary"><X className="w-5 h-5" /></button>
           </div>
-          <h3 className="text-lg font-bold text-text-primary mb-2">Policy Created!</h3>
-          <p className="text-sm text-text-secondary mb-1">
-            UnderwriteAI has assessed the risk and generated your policy.
-          </p>
-          <p className="text-xs text-accent-purple font-mono">
-            TX: 0xnewpolicy_{Math.random().toString(36).slice(2, 10)}...
-          </p>
-          <p className="text-xs text-text-secondary mt-3">
-            Premium of {premiumAmount.toFixed(0)} CSPR paid via x402 protocol
-          </p>
+
+          <div className="w-14 h-14 rounded-full bg-accent-green/20 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle className="w-7 h-7 text-accent-green" />
+          </div>
+          <p className="text-center text-sm font-bold text-text-primary mb-4">Policy Created Successfully</p>
+
+          {policy && (
+            <div className="bg-bg-primary rounded-lg p-3 mb-3 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-xs text-text-secondary">Policy ID</span>
+                <span className="text-xs font-mono text-accent-purple">{String(policy.id)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-text-secondary">Coverage</span>
+                <span className="text-xs font-bold text-accent-green">{Number(policy.coverageAmount).toLocaleString()} CSPR</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-text-secondary">Premium Paid</span>
+                <span className="text-xs font-bold text-accent-orange">{Number(policy.premiumPaid).toLocaleString()} CSPR</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-text-secondary">Risk Score</span>
+                <span className="text-xs font-bold">{String(policy.riskScore)}/100</span>
+              </div>
+            </div>
+          )}
+
+          {uw && (
+            <div className="bg-bg-primary rounded-lg p-3 mb-3">
+              <p className="text-xs text-text-secondary mb-1">Payment Method</p>
+              <p className="text-sm font-medium text-accent-purple">{String((uw as Record<string, unknown>).paymentMethod)}</p>
+            </div>
+          )}
+
+          {tx && (
+            <div className="bg-accent-purple/10 border border-accent-purple/20 rounded-lg p-3">
+              <p className="text-xs text-accent-purple font-semibold mb-1">On-chain Transaction</p>
+              <p className="text-[10px] text-accent-purple/80 font-mono break-all">TX: {String((tx as Record<string, unknown>).txHash)}</p>
+              <p className="text-[10px] text-text-secondary mt-1">Block #{String(result.blockHeight)} · Gas: {String((tx as Record<string, unknown>).gasCost)}</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -226,11 +280,20 @@ function CreatePolicyModal({ onClose }: { onClose: () => void }) {
 
           <button
             onClick={handleSubmit}
-            disabled={!formData.holder || !formData.protocol || !formData.coverage}
+            disabled={!formData.holder || !formData.protocol || !formData.coverage || processing}
             className="w-full bg-accent-purple hover:bg-accent-purple/90 disabled:bg-accent-purple/30 disabled:cursor-not-allowed text-white py-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
           >
-            <Shield className="w-4 h-4" />
-            Create Policy & Pay Premium via x402
+            {processing ? (
+              <>
+                <Bot className="w-4 h-4 animate-spin" />
+                UnderwriteAI processing...
+              </>
+            ) : (
+              <>
+                <Shield className="w-4 h-4" />
+                Create Policy & Pay Premium via x402
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -246,6 +309,7 @@ export default function PoliciesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
+      <LiveNetworkBar />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-text-primary">Insurance Policies</h1>

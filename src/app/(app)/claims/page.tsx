@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { claims, policies } from '@/lib/mock-data';
 import type { Claim } from '@/types';
+import LiveNetworkBar from '@/components/LiveNetworkBar';
 
 function ClaimStatusBadge({ status }: { status: Claim['status'] }) {
   const config: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -156,30 +157,85 @@ function ClaimDetail({ claim, onClose }: { claim: Claim; onClose: () => void }) 
 function SubmitClaimModal({ onClose }: { onClose: () => void }) {
   const [formData, setFormData] = useState({ policyId: '', amount: '', reason: '', evidence: '' });
   const [processing, setProcessing] = useState(false);
-  const [done, setDone] = useState(false);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setProcessing(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/claims', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claimant: 'User',
+          policyId: formData.policyId,
+          amount: parseFloat(formData.amount),
+          reason: formData.reason,
+          evidence: formData.evidence || '0x' + Math.random().toString(16).slice(2),
+        }),
+      });
+      if (res.ok) setResult(await res.json());
+    } catch {
+      // show fallback
+    } finally {
       setProcessing(false);
-      setDone(true);
-    }, 2500);
+    }
   };
 
-  if (done) {
+  if (result) {
+    const assessment = (result as Record<string, unknown>).assessment as Record<string, unknown> | undefined;
+    const claim = (result as Record<string, unknown>).claim as Record<string, unknown> | undefined;
+    const tx = (result as Record<string, unknown>).transaction as Record<string, unknown> | undefined;
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]" onClick={onClose}>
-        <div className="bg-bg-card border border-border-main rounded-2xl p-8 max-w-md w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
-          <div className="w-16 h-16 rounded-full bg-accent-blue/20 flex items-center justify-center mx-auto mb-4">
-            <Bot className="w-8 h-8 text-accent-blue" />
+        <div className="bg-bg-card border border-border-main rounded-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+              <Bot className="w-5 h-5 text-accent-purple" />
+              ClaimBot Assessment
+            </h3>
+            <button onClick={onClose} className="text-text-secondary hover:text-text-primary"><X className="w-5 h-5" /></button>
           </div>
-          <h3 className="text-lg font-bold text-text-primary mb-2">Claim Submitted</h3>
-          <p className="text-sm text-text-secondary">
-            ClaimBot is now analyzing your on-chain evidence and will provide an AI assessment within minutes.
-          </p>
-          <p className="text-xs text-accent-purple font-mono mt-3">
-            CLM-{String(Math.floor(Math.random() * 900) + 100).padStart(3, '0')}
-          </p>
+
+          {claim && (
+            <div className="bg-bg-primary rounded-lg p-3 mb-3">
+              <p className="text-xs text-text-secondary mb-1">Claim ID</p>
+              <p className="text-sm font-mono text-accent-purple">{String(claim.id)}</p>
+              <p className="text-[10px] text-text-secondary mt-1">Block #{String(result.blockHeight)}</p>
+            </div>
+          )}
+
+          {assessment && (
+            <>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-bg-primary rounded-lg p-3 text-center">
+                  <p className="text-xs text-text-secondary mb-1">Risk Score</p>
+                  <p className="text-xl font-bold text-accent-orange">{String((assessment as Record<string, unknown>).riskScore)}</p>
+                </div>
+                <div className="bg-bg-primary rounded-lg p-3 text-center">
+                  <p className="text-xs text-text-secondary mb-1">Confidence</p>
+                  <p className="text-xl font-bold text-accent-blue">{String((assessment as Record<string, unknown>).confidence)}</p>
+                </div>
+                <div className="bg-bg-primary rounded-lg p-3 text-center">
+                  <p className="text-xs text-text-secondary mb-1">Decision</p>
+                  <p className={`text-sm font-bold ${String((assessment as Record<string, unknown>).recommendation) === 'approve' ? 'text-accent-green' : 'text-accent-orange'}`}>
+                    {String((assessment as Record<string, unknown>).recommendation).toUpperCase()}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-bg-primary rounded-lg p-3 mb-3">
+                <p className="text-xs text-text-secondary mb-1">AI Reasoning</p>
+                <p className="text-sm text-text-primary">{String((assessment as Record<string, unknown>).reasoning)}</p>
+              </div>
+            </>
+          )}
+
+          {tx && (
+            <div className="bg-accent-purple/10 border border-accent-purple/20 rounded-lg p-3">
+              <p className="text-xs text-accent-purple font-semibold mb-1">Transaction</p>
+              <p className="text-[10px] text-accent-purple/80 font-mono break-all">TX: {String((tx as Record<string, unknown>).txHash)}</p>
+              <p className="text-[10px] text-text-secondary mt-1">x402 Payment: {String((tx as Record<string, unknown>).x402PaymentId)}</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -275,6 +331,7 @@ export default function ClaimsPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
+      <LiveNetworkBar />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-text-primary">Insurance Claims</h1>

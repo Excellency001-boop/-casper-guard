@@ -17,6 +17,8 @@ import {
   Clock,
 } from 'lucide-react';
 import { agentActivities, x402Payments } from '@/lib/mock-data';
+import LiveNetworkBar from '@/components/LiveNetworkBar';
+import { useAgentData } from '@/hooks/use-live-data';
 
 const agents = [
   {
@@ -181,6 +183,7 @@ function AgentCard({ agent }: { agent: (typeof agents)[0] }) {
 
 export default function AgentsPage() {
   const [liveCount, setLiveCount] = useState(0);
+  const { data: agentData } = useAgentData(15000);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -191,6 +194,20 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
+      <LiveNetworkBar />
+
+      {agentData && (
+        <div className="bg-accent-purple/5 border border-accent-purple/20 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs">
+          <span className="text-accent-purple font-semibold">Live Agent Status</span>
+          <span className="text-text-secondary">
+            All agents scanning block #{agentData.blockHeight.toLocaleString()} · Era {agentData.era.toLocaleString()}
+          </span>
+          <span className="text-text-secondary/50 sm:ml-auto">
+            Data: Casper Testnet
+          </span>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-text-primary">AI Agent Fleet</h1>

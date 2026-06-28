@@ -34,6 +34,8 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
+import LiveNetworkBar from '@/components/LiveNetworkBar';
+import { useRiskData } from '@/hooks/use-live-data';
 
 function StatCard({
   label,
@@ -141,6 +143,7 @@ function getTimeAgo(timestamp: string) {
 
 export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
+  const { data: riskData } = useRiskData(30000);
 
   useEffect(() => {
     setMounted(true);
@@ -148,8 +151,13 @@ export default function Dashboard() {
 
   if (!mounted) return null;
 
+  const liveProtocols = riskData?.protocols ?? protocols;
+
   return (
     <div className="space-y-6 max-w-7xl">
+      {/* Live Network Bar */}
+      <LiveNetworkBar />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -263,31 +271,51 @@ export default function Dashboard() {
 
         {/* Protocol Risk List */}
         <div className="bg-bg-card border border-border-main rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-text-primary mb-4">
-            Monitored Protocols
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-text-primary">
+              Monitored Protocols
+            </h2>
+            {riskData && (
+              <span className="text-[10px] text-accent-green font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
+                LIVE
+              </span>
+            )}
+          </div>
           <div className="space-y-3">
-            {protocols.map((p) => (
+            {(riskData?.protocols ?? protocols).map((p) => {
+              const name = 'name' in p ? p.name : ('protocol' in p ? (p as typeof protocols[0]).protocol : '');
+              const score = p.riskScore;
+              const cat = p.category;
+              const tvl = p.tvl;
+              const alerts = p.alerts;
+              return (
               <div
-                key={p.protocol}
+                key={name}
                 className="flex items-center justify-between p-2.5 rounded-lg bg-bg-primary/50 hover:bg-bg-card-hover transition-colors"
               >
                 <div>
                   <p className="text-sm font-medium text-text-primary">
-                    {p.protocol}
+                    {name}
                   </p>
                   <p className="text-[10px] text-text-secondary">
-                    TVL: ${(p.tvl / 1_000_000).toFixed(1)}M
+                    TVL: ${(tvl / 1_000_000).toFixed(1)}M
                   </p>
+                  {alerts.length > 0 && (
+                    <p className="text-[10px] text-accent-orange mt-0.5 truncate max-w-[180px]">
+                      {alerts[0]}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
-                  <RiskBadge category={p.category} />
-                  <p className={`text-[10px] mt-1 ${p.change24h >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
-                    {p.change24h >= 0 ? '+' : ''}{p.change24h}%
+                  <RiskBadge category={cat} />
+                  <p className="text-[10px] mt-1 text-text-secondary font-mono">
+                    {score}/100
                   </p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
