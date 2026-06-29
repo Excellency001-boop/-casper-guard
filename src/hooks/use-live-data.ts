@@ -120,7 +120,17 @@ export function useAgentData(refreshInterval = 15000) {
   const refresh = useCallback(async () => {
     try {
       const res = await fetch('/api/agent');
-      if (res.ok) setData(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        // Map new fleet-based response to expected AgentData shape
+        if (json.fleet && !json.blockHeight) {
+          json.blockHeight = json.fleet.blockHeight;
+          json.era = json.fleet.era;
+          json.networkConnected = json.fleet.mcpConnected;
+          json.timestamp = new Date().toISOString();
+        }
+        setData(json);
+      }
     } catch {
       // silent fail
     } finally {
