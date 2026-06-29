@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import {
   Shield,
   Bot,
@@ -18,15 +17,6 @@ import {
   Cpu,
   ChevronDown,
 } from 'lucide-react';
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const },
-  }),
-};
 
 const agents = [
   {
@@ -149,48 +139,36 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative pt-32 sm:pt-40 pb-20 sm:pb-32 px-4 sm:px-6">
         <ParticleField />
-        {/* Gradient orbs */}
         <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-accent-purple/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-accent-cyan/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-accent-purple/10 border border-accent-purple/20 rounded-full px-4 py-1.5 mb-6"
-          >
+          <div className="animate-slide-up inline-flex items-center gap-2 bg-accent-purple/10 border border-accent-purple/20 rounded-full px-4 py-1.5 mb-6">
             <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
             <span className="text-xs sm:text-sm text-accent-purple font-medium">Live on Casper Testnet</span>
-          </motion.div>
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-7xl font-black text-text-primary leading-[1.1] mb-6"
+          <h1
+            className="animate-slide-up text-4xl sm:text-5xl md:text-7xl font-black text-text-primary leading-[1.1] mb-6"
+            style={{ animationDelay: '0.1s' }}
           >
             AI Agents That{' '}
             <span className="bg-gradient-to-r from-accent-purple via-accent-blue to-accent-cyan bg-clip-text text-transparent">
               Protect
             </span>{' '}
             Your DeFi
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed"
+          <p
+            className="animate-slide-up text-base sm:text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed"
+            style={{ animationDelay: '0.2s' }}
           >
             Four autonomous AI agents monitor risks, underwrite policies, process claims, and manage vault reserves — all without human intervention. Built on Casper Network.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          <div
+            className="animate-slide-up flex flex-col sm:flex-row items-center justify-center gap-4"
+            style={{ animationDelay: '0.3s' }}
           >
             <Link
               href="/dashboard"
@@ -208,19 +186,16 @@ export default function LandingPage() {
               <Globe className="w-5 h-5" />
               View on GitHub
             </a>
-          </motion.div>
+          </div>
         </div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        <div
+          className="animate-slide-up absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          style={{ animationDelay: '1s' }}
         >
           <span className="text-xs text-text-secondary">Scroll to explore</span>
           <ChevronDown className="w-4 h-4 text-text-secondary animate-bounce" />
-        </motion.div>
+        </div>
       </section>
 
       {/* Stats bar */}
@@ -228,21 +203,17 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {stats.map((stat, i) => (
-              <motion.div
+              <div
                 key={stat.label}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                className="text-center"
+                className="animate-slide-up text-center"
+                style={{ animationDelay: `${i * 0.1}s` }}
               >
                 <div className="w-10 h-10 rounded-xl bg-accent-purple/10 flex items-center justify-center mx-auto mb-3">
                   <stat.icon className="w-5 h-5 text-accent-purple" />
                 </div>
                 <p className="text-2xl sm:text-3xl font-black text-text-primary">{stat.value}</p>
                 <p className="text-xs sm:text-sm text-text-secondary mt-1">{stat.label}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -251,14 +222,7 @@ export default function LandingPage() {
       {/* Agent Fleet */}
       <section id="agents" className="py-20 sm:py-28 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="text-center mb-12 sm:mb-16"
-          >
+          <div className="animate-slide-up text-center mb-12 sm:mb-16">
             <span className="text-xs font-bold text-accent-purple uppercase tracking-widest">Autonomous Protection</span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-text-primary mt-3 mb-4">
               Meet Your AI Agent Fleet
@@ -266,20 +230,16 @@ export default function LandingPage() {
             <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto">
               Four specialized agents working 24/7 to monitor, assess, insure, and protect your DeFi positions.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {agents.map((agent, i) => {
               const Icon = agent.icon;
               return (
-                <motion.div
+                <div
                   key={agent.name}
-                  custom={i}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={fadeUp}
-                  className="group bg-bg-card border border-border-main rounded-2xl p-6 sm:p-8 hover:border-accent-purple/30 transition-all duration-300 hover:-translate-y-1"
+                  className="animate-slide-up group bg-bg-card border border-border-main rounded-2xl p-6 sm:p-8 hover:border-accent-purple/30 transition-all duration-300 hover:-translate-y-1"
+                  style={{ animationDelay: `${i * 0.1}s` }}
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <div
@@ -299,7 +259,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-sm text-text-secondary leading-relaxed">{agent.desc}</p>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -309,14 +269,7 @@ export default function LandingPage() {
       {/* Casper AI Toolkit */}
       <section id="toolkit" className="py-20 sm:py-28 px-4 sm:px-6 bg-bg-secondary/30 border-y border-border-main">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="text-center mb-12 sm:mb-16"
-          >
+          <div className="animate-slide-up text-center mb-12 sm:mb-16">
             <span className="text-xs font-bold text-accent-cyan uppercase tracking-widest">Full Stack Integration</span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-text-primary mt-3 mb-4">
               Powered by Casper AI Toolkit
@@ -324,18 +277,14 @@ export default function LandingPage() {
             <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto">
               Deep integration with every component of the Casper AI ecosystem.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             {toolkitItems.map((item, i) => (
-              <motion.div
+              <div
                 key={item.name}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                className="bg-bg-card border border-border-main rounded-xl p-5 sm:p-6 text-center hover:border-accent-purple/20 transition-all"
+                className="animate-slide-up bg-bg-card border border-border-main rounded-xl p-5 sm:p-6 text-center hover:border-accent-purple/20 transition-all"
+                style={{ animationDelay: `${i * 0.1}s` }}
               >
                 <div
                   className="w-3 h-3 rounded-full mx-auto mb-3"
@@ -343,7 +292,7 @@ export default function LandingPage() {
                 />
                 <p className="text-sm sm:text-base font-bold text-text-primary">{item.name}</p>
                 <p className="text-xs text-text-secondary mt-1">{item.desc}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -352,19 +301,12 @@ export default function LandingPage() {
       {/* How it works */}
       <section id="how" className="py-20 sm:py-28 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="text-center mb-12 sm:mb-16"
-          >
+          <div className="animate-slide-up text-center mb-12 sm:mb-16">
             <span className="text-xs font-bold text-accent-green uppercase tracking-widest">Simple Process</span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-text-primary mt-3 mb-4">
               How CasperGuard Works
             </h2>
-          </motion.div>
+          </div>
 
           <div className="space-y-4 sm:space-y-6">
             {[
@@ -399,14 +341,10 @@ export default function LandingPage() {
             ].map((item, i) => {
               const Icon = item.icon;
               return (
-                <motion.div
+                <div
                   key={item.step}
-                  custom={i}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={fadeUp}
-                  className="flex gap-4 sm:gap-6 items-start bg-bg-card border border-border-main rounded-2xl p-5 sm:p-8 hover:border-accent-purple/20 transition-all"
+                  className="animate-slide-up flex gap-4 sm:gap-6 items-start bg-bg-card border border-border-main rounded-2xl p-5 sm:p-8 hover:border-accent-purple/20 transition-all"
+                  style={{ animationDelay: `${i * 0.1}s` }}
                 >
                   <div className="flex flex-col items-center shrink-0">
                     <span className="text-2xl sm:text-3xl font-black text-text-secondary/20">{item.step}</span>
@@ -421,7 +359,7 @@ export default function LandingPage() {
                     <h3 className="text-base sm:text-xl font-bold text-text-primary mb-2">{item.title}</h3>
                     <p className="text-sm text-text-secondary leading-relaxed">{item.desc}</p>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -431,14 +369,7 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="py-20 sm:py-28 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="relative bg-gradient-to-br from-accent-purple/10 via-bg-card to-accent-cyan/10 border border-accent-purple/20 rounded-3xl p-8 sm:p-12 md:p-16 text-center overflow-hidden"
-          >
+          <div className="animate-slide-up relative bg-gradient-to-br from-accent-purple/10 via-bg-card to-accent-cyan/10 border border-accent-purple/20 rounded-3xl p-8 sm:p-12 md:p-16 text-center overflow-hidden">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent-purple/5 rounded-full blur-[100px] pointer-events-none" />
             <div className="relative z-10">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-accent-purple to-accent-cyan flex items-center justify-center mx-auto mb-6">
@@ -459,7 +390,7 @@ export default function LandingPage() {
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
