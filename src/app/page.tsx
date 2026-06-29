@@ -64,7 +64,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-bg-primary overflow-x-hidden">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-bg-primary/80 backdrop-blur-xl border-b border-border-main/50">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-bg-primary/95 sm:bg-bg-primary/80 sm:backdrop-blur-xl border-b border-border-main/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-purple to-accent-cyan flex items-center justify-center">
@@ -89,9 +89,9 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative pt-32 sm:pt-40 pb-20 sm:pb-32 px-4 sm:px-6">
-        <ParticleField />
-        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-accent-purple/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-accent-cyan/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="hidden sm:block"><ParticleField /></div>
+        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-accent-purple/10 rounded-full blur-[120px] pointer-events-none hidden sm:block" />
+        <div className="absolute top-40 right-1/4 w-[400px] h-[400px] bg-accent-cyan/10 rounded-full blur-[120px] pointer-events-none hidden sm:block" />
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="animate-slide-up inline-flex items-center gap-2 bg-accent-purple/10 border border-accent-purple/20 rounded-full px-4 py-1.5 mb-6">
@@ -321,7 +321,7 @@ export default function LandingPage() {
       <section className="py-20 sm:py-28 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <div className="animate-slide-up relative bg-gradient-to-br from-accent-purple/10 via-bg-card to-accent-cyan/10 border border-accent-purple/20 rounded-3xl p-8 sm:p-12 md:p-16 text-center overflow-hidden">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent-purple/5 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent-purple/5 rounded-full blur-[100px] pointer-events-none hidden sm:block" />
             <div className="relative z-10">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-accent-purple to-accent-cyan flex items-center justify-center mx-auto mb-6">
                 <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
