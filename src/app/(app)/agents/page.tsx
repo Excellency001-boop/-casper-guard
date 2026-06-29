@@ -297,6 +297,11 @@ function AgentRunPanel() {
             <div className="bg-bg-primary rounded-lg p-3 border border-accent-purple/20">
               <p className="text-[10px] font-bold text-accent-purple mb-1">4. ACT</p>
               <p className="text-[10px] text-text-secondary">Signed: {lastRun.action?.signed ? 'Yes' : 'No'}</p>
+              {lastRun.action?.submitted !== undefined && (
+                <p className={`text-[10px] ${lastRun.action.submitted ? 'text-accent-green' : 'text-accent-orange'}`}>
+                  {lastRun.action.submitted ? 'Submitted to testnet' : 'Signed (pending)'}
+                </p>
+              )}
               <p className="text-[8px] text-text-secondary font-mono break-all mt-1">
                 {lastRun.action?.deployHash?.slice(0, 16)}...
               </p>

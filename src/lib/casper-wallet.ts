@@ -12,6 +12,8 @@ import {
   HttpHandler,
   RpcClient,
   Deploy,
+  NativeTransferBuilder,
+  Transaction,
 } from 'casper-js-sdk';
 
 const RPC_URL = 'https://node.testnet.casper.network/rpc';
@@ -70,6 +72,59 @@ export async function createTransferDeploy(
     deployHash: deploy.hash.toHex(),
     senderPublicKey: wallet.publicKey.toHex(),
   };
+}
+
+/**
+ * Create and sign a native transfer transaction (Casper 2.0+ TransactionV1).
+ * This is the modern format that all testnet nodes accept.
+ */
+export async function createTransferTransaction(
+  recipientHex: string,
+  amountMotes: string,
+  id?: number
+): Promise<{ transaction: Transaction; transactionHash: string; senderPublicKey: string }> {
+  const wallet = await getAgentWallet();
+  const recipient = PublicKey.fromHex(recipientHex);
+
+  const transaction = new NativeTransferBuilder()
+    .from(wallet.publicKey)
+    .target(recipient)
+    .amount(amountMotes)
+    .id(id ?? Date.now())
+    .chainName(CHAIN_NAME)
+    .payment(100_000_000)
+    .build();
+
+  transaction.sign(wallet);
+
+  return {
+    transaction,
+    transactionHash: transaction.hash.toHex(),
+    senderPublicKey: wallet.publicKey.toHex(),
+  };
+}
+
+/**
+ * Submit a signed transaction (V2) to the Casper testnet.
+ */
+export async function submitTransaction(
+  transaction: Transaction
+): Promise<{ success: boolean; hash: string; error?: string }> {
+  try {
+    const rpc = getRpcClient();
+    const result = await rpc.putTransaction(transaction);
+    return {
+      success: true,
+      hash: typeof result === 'string' ? result : transaction.hash.toHex(),
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      success: false,
+      hash: transaction.hash.toHex(),
+      error: message,
+    };
+  }
 }
 
 /**

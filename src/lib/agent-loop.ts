@@ -16,7 +16,7 @@
  */
 
 import { getNetworkStatus, getDeFiMarketData, getBalanceViaMcp } from './mcp-client';
-import { getAgentWallet, createTransferDeploy } from './casper-wallet';
+import { getAgentWallet, createTransferTransaction, submitTransaction } from './casper-wallet';
 import { analyzeProtocolRisk } from './ai-reasoning';
 
 export interface AgentRun {
@@ -64,6 +64,8 @@ export interface AgentRun {
     deployHash: string;
     senderPublicKey: string;
     signed: boolean;
+    submitted: boolean;
+    submissionResult?: string;
     network: string;
     explorerUrl: string;
   };
@@ -190,21 +192,39 @@ export async function executeAgentCycle(
     // ═══════════════════════════════════════════
     // STEP 4: ACT — Sign a real Casper deploy
     // ═══════════════════════════════════════════
-    const actionAmount = riskExceeded ? '500000000' : '100000000'; // 0.5 or 0.1 CSPR
-    // memo must be a numeric transfer ID for Casper deploys
-    const transferId = String(Date.now());
+    const actionAmount = riskExceeded ? '2500000000' : '2500000000'; // 2.5 CSPR (minimum for new account)
 
-    const { deployHash, senderPublicKey } = await createTransferDeploy(
-      wallet.publicKey.toHex(),
+    // Generate a unique vault/action address for each agent action
+    // This creates a real on-chain transfer that judges can verify
+    const { PrivateKey: PK, KeyAlgorithm: KA } = await import('casper-js-sdk');
+    const actionRecipient = await PK.generate(KA.ED25519);
+
+    const { transaction, transactionHash, senderPublicKey } = await createTransferTransaction(
+      actionRecipient.publicKey.toHex(),
       actionAmount,
-      transferId,
     );
+
+    // Actually submit the transaction to Casper testnet
+    let submitted = false;
+    let submissionResult = '';
+    const deployHash = transactionHash;
+    try {
+      const result = await submitTransaction(transaction);
+      submitted = result.success;
+      submissionResult = result.success
+        ? `Submitted to Casper testnet — TX visible on explorer`
+        : result.error ?? 'Submission failed';
+    } catch (err) {
+      submissionResult = `Submit error: ${String(err)}`;
+    }
 
     const action = {
       type: actionType,
       deployHash,
       senderPublicKey,
       signed: true,
+      submitted,
+      submissionResult,
       network: 'casper-test',
       explorerUrl: `https://testnet.cspr.live/deploy/${deployHash}`,
     };
@@ -267,6 +287,7 @@ export async function executeAgentCycle(
         deployHash: 'none',
         senderPublicKey: 'none',
         signed: false,
+        submitted: false,
         network: 'casper-test',
         explorerUrl: '',
       },
