@@ -119,7 +119,7 @@ export async function submitTransaction(
       jsonrpc: '2.0',
       id: Date.now(),
       method: 'account_put_transaction',
-      params: transaction.toJSON(),
+      params: { transaction: { Version1: transaction.toJSON() } },
     });
 
     const res = await fetch(RPC_URL, {
