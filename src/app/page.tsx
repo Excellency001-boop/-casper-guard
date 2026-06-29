@@ -1,22 +1,17 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Shield,
   Bot,
-  Zap,
   Eye,
   TrendingUp,
   DollarSign,
   ArrowRight,
   CheckCircle,
-  Lock,
-  Activity,
   Globe,
   Cpu,
   ChevronDown,
 } from 'lucide-react';
+import ParticleField from '@/components/ParticleField';
 
 const agents = [
   {
@@ -64,42 +59,6 @@ const toolkitItems = [
   { name: 'CSPR.cloud', desc: 'Analytics APIs', color: '#10b981' },
   { name: 'Odra Framework', desc: 'Smart contracts', color: '#ef4444' },
 ];
-
-function ParticleField() {
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; duration: number; delay: number }>>([]);
-
-  useEffect(() => {
-    setParticles(
-      Array.from({ length: 40 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: Math.random() * 3 + 1,
-        duration: Math.random() * 20 + 10,
-        delay: Math.random() * 5,
-      }))
-    );
-  }, []);
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute rounded-full bg-accent-purple/30 animate-pulse-glow"
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size,
-            animationDuration: `${p.duration}s`,
-            animationDelay: `${p.delay}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 export default function LandingPage() {
   return (
