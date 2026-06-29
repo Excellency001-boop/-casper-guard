@@ -102,14 +102,6 @@ function ParticleField() {
 }
 
 export default function LandingPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
   return (
     <div className="min-h-screen bg-bg-primary overflow-x-hidden">
       {/* Nav */}
