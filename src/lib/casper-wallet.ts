@@ -106,24 +106,51 @@ export async function createTransferTransaction(
 
 /**
  * Submit a signed transaction (V2) to the Casper testnet.
+ * Uses raw fetch to avoid SDK serialization issues on serverless platforms.
  */
 export async function submitTransaction(
   transaction: Transaction
 ): Promise<{ success: boolean; hash: string; error?: string }> {
+  const txHash = transaction.hash.toHex();
+
   try {
-    const rpc = getRpcClient();
-    const result = await rpc.putTransaction(transaction);
-    return {
-      success: true,
-      hash: typeof result === 'string' ? result : transaction.hash.toHex(),
-    };
+    // Use raw fetch for reliable submission on Vercel/serverless
+    const body = JSON.stringify({
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'account_put_transaction',
+      params: transaction.toJSON(),
+    });
+
+    const res = await fetch(RPC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      signal: AbortSignal.timeout(15000),
+    });
+
+    const data = await res.json();
+
+    if (data?.result?.transaction_hash) {
+      return { success: true, hash: txHash };
+    }
+    if (data?.error) {
+      return { success: false, hash: txHash, error: `Code: ${data.error.code}, err: ${data.error.message}` };
+    }
+    return { success: true, hash: txHash };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return {
-      success: false,
-      hash: transaction.hash.toHex(),
-      error: message,
-    };
+    // Fallback to SDK method
+    try {
+      const rpc = getRpcClient();
+      const result = await rpc.putTransaction(transaction);
+      return {
+        success: true,
+        hash: typeof result === 'string' ? result : txHash,
+      };
+    } catch (sdkErr: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, hash: txHash, error: message };
+    }
   }
 }
 
